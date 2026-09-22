@@ -1,39 +1,6 @@
-/* OPTV — sąsajos logika: tema, mobilus meniu, šaltinių filtras */
+/* OPTV — sąsajos logika: mobilus meniu, šaltinių filtras */
 (function () {
   'use strict';
-
-  var root = document.documentElement;
-
-  /* ---------- Tema (šviesi / tamsi) ---------- */
-  var THEME_KEY = 'optv-theme';
-
-  function readTheme() {
-    try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
-  }
-  function saveTheme(value) {
-    try { localStorage.setItem(THEME_KEY, value); } catch (e) { /* privatus režimas ir pan. */ }
-  }
-  function systemPrefersDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-  function currentTheme() {
-    var explicit = root.getAttribute('data-theme');
-    if (explicit === 'dark' || explicit === 'light') return explicit;
-    return systemPrefersDark() ? 'dark' : 'light';
-  }
-
-  var stored = readTheme();
-  if (stored === 'dark' || stored === 'light') root.setAttribute('data-theme', stored);
-
-  var toggle = document.querySelector('.theme-toggle');
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      var next = currentTheme() === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      saveTheme(next);
-      toggle.setAttribute('aria-label', next === 'dark' ? 'Įjungti šviesią temą' : 'Įjungti tamsią temą');
-    });
-  }
 
   /* ---------- Mobilus meniu ---------- */
   var navToggle = document.querySelector('.nav-toggle');
@@ -101,6 +68,31 @@
     applyFilter(hashMatch[1], false);
   } else if (chips.length) {
     applyFilter('all', false);
+  }
+
+  /* Nuoroda į kortelę, kurią slepia filtras: parodome visas ir nuslenkame */
+  function revealCard() {
+    var id = (location.hash || '').slice(1);
+    var el = id && document.getElementById(id);
+    if (el && el.classList.contains('card') && el.hidden) {
+      applyFilter('all', false);
+      el.scrollIntoView();
+    }
+  }
+  window.addEventListener('hashchange', revealCard);
+  revealCard();
+
+  /* ---------- Metinės favorito kortelėje ---------- */
+  var anniv = document.querySelector('[data-anniv]');
+  if (anniv) {
+    var d = anniv.getAttribute('data-anniv').split('-');
+    var now = new Date();
+    var isToday = now.getFullYear() === Number(d[0]) &&
+      now.getMonth() + 1 === Number(d[1]) &&
+      now.getDate() === Number(d[2]);
+    Array.prototype.forEach.call(anniv.querySelectorAll('[data-when]'), function (el) {
+      el.hidden = (el.getAttribute('data-when') === 'today') !== isToday;
+    });
   }
 
   /* ---------- Metai poraštėje ---------- */
